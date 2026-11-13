@@ -39,9 +39,14 @@ som går var 15:e minut, som Hönöleden, visar appen helt enkelt den avgång du
 räknar om restiden var 45:e sekund (var 15:e i demoläget) och skickar en avisering bara
 när svaret blir sämre: du hinner → ont om tid → du hinner inte.
 
-| Navigeringen tar över | Avisering när det blir kö |
+| Navigeringen tar över | Varningen dyker upp ovanpå navigeringen |
 | --- | --- |
 | ![Google Maps kör mot Saltholmen](docs/screenshots/06-navigering.png) | ![Du hinner inte till 14:30. Ingen stress, nästa båt går 15:00](docs/screenshots/07-varning.png) |
+
+Android Automotive visar bara aviseringar ovanpå andra appar (heads-up) för vissa
+kategorier: navigering, samtal och meddelanden. Varningen har därför kategorin
+*navigation*, eftersom den handlar om körningen. Med en vanlig påminnelse hamnade den
+tyst i aviseringscentret.
 
 **Öppna** i aviseringen tar dig direkt till färjans kort. Där kan du välja nästa avgång
 (**Ta 15:00-båten**) eller leta upp ett kafé vid hamnen.
@@ -80,6 +85,8 @@ Stäng av demoläget under **Marginaler** för att använda riktig klocka och bi
   restiden fågelvägen och skriver "(uppskattad)".
 - **Navigationsappens ankomsttid går inte att läsa.** Android lämnar inte ut den till andra
   appar, så Hinner jag? räknar fram sin egen restid.
+- **Kategorin för varningen är inte prövad i Play-granskning.** Det är inte provat om
+  kategorin *navigation* godkänns för en app som själv inte är en navigationsapp.
 
 ## Bygga och köra
 
@@ -91,16 +98,9 @@ adb shell am start -n com.artemkhateev.hinnerjag/androidx.car.app.activity.CarAp
 ```
 
 Testad i emulatorn *Automotive (1408p landscape) with Google Play*, API 35, där systemets
-mallvärd (templates host) och Google Maps redan finns.
-
-> **Aviseringar i emulatorn.** Den emulatorbilden har `heads_up_notifications_enabled = 0`,
-> så varningen hamnar i aviseringscentret (klockikonen uppe till höger) i stället för att
-> dyka upp ovanpå navigeringen. Med inställningen påslagen bör den dyka upp ovanpå
-> navigeringen. Det är inte provat än:
->
-> ```bash
-> adb shell settings put global heads_up_notifications_enabled 1
-> ```
+mallvärd (templates host) och Google Maps redan finns. Inställningen
+`heads_up_notifications_enabled` spelar ingen roll där: varningen dyker upp oavsett om
+den är 0 eller 1.
 
 ## Kodstruktur
 

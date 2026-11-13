@@ -82,7 +82,10 @@ class TripAlerts(private val context: Context) {
             .setContentTitle(alert.title)
             .setContentText(alert.text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(alert.text))
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            // AAOS shows heads-ups only for some categories (navigation, call, messaging). With
+            // CATEGORY_REMINDER the warning went silently to the notification centre, whatever
+            // heads_up_notifications_enabled said. It is about the drive, so navigation fits.
+            .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .setContentIntent(open)
