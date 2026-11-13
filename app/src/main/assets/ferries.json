@@ -1,0 +1,44 @@
+{
+  "note": "Påhittade tider för prototypen – inte rederiernas riktiga tidtabeller. Koordinaterna är ungefärliga (OpenStreetMap).",
+  "routes": [
+    {
+      "id": "frederikshavn",
+      "from": "Göteborg",
+      "to": "Frederikshavn",
+      "description": "Bilfärja · från terminalen vid Masthugget",
+      "portName": "Masthugget",
+      "lat": 57.7012,
+      "lon": 11.9456,
+      "vessel": "FERRY",
+      "boarding": "CHECK_IN",
+      "marginMinutes": 20,
+      "departures": ["08:00", "14:00", "17:15", "22:30"]
+    },
+    {
+      "id": "honoleden",
+      "from": "Lilla Varholmen",
+      "to": "Hönö",
+      "description": "Vägfärja · Hönöleden, ingen bokning",
+      "portName": "Lilla Varholmen",
+      "lat": 57.7067,
+      "lon": 11.7044,
+      "vessel": "FERRY",
+      "boarding": "QUEUE",
+      "marginMinutes": 5,
+      "every": { "first": "05:03", "last": "23:48", "minutes": 15 }
+    },
+    {
+      "id": "styrso",
+      "from": "Saltholmen",
+      "to": "Styrsö",
+      "description": "Passagerarbåt · bilen parkeras vid Saltholmen",
+      "portName": "Saltholmen",
+      "lat": 57.6601,
+      "lon": 11.8430,
+      "vessel": "BOAT",
+      "boarding": "WALK",
+      "marginMinutes": 10,
+      "every": { "first": "06:00", "last": "23:30", "minutes": 30 }
+    }
+  ]
+}
