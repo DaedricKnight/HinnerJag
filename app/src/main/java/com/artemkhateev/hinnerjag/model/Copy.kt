@@ -58,7 +58,7 @@ object Copy {
         else -> "$slackMinutes minuters marginal"
     }
 
-    fun body(route: FerryRoute, v: Verdict): String? = when (v.status) {
+    fun body(route: FerryRoute, v: Verdict, tomorrowFirst: Int? = route.departures.firstOrNull()): String? = when (v.status) {
         Status.ON_TIME -> null
         Status.TIGHT -> v.next
             ?.let { "Kör inte fortare. Missar du den går nästa ${clock(it)} – det är helt okej." }
@@ -71,7 +71,7 @@ object Copy {
                     ?: " Det var dagens sista avgång. Planera om i lugn och ro när du står still."
                 )
         }
-        Status.NONE_LEFT -> route.departures.firstOrNull()?.let { "Första avgången i morgon: ${clock(it)}." }
+        Status.NONE_LEFT -> tomorrowFirst?.let { "Första avgången i morgon: ${clock(it)}." }
     }
 
     private fun boardingVerb(b: Boarding) = when (b) {
@@ -142,4 +142,9 @@ object Copy {
     }
 
     const val ARRIVED = "Du är framme. Trevlig resa!"
+
+    fun timetableLabel(origin: com.artemkhateev.hinnerjag.timetable.TimetableOrigin) = when (origin) {
+        com.artemkhateev.hinnerjag.timetable.TimetableOrigin.VASTTRAFIK -> "Tider från Västtrafik"
+        com.artemkhateev.hinnerjag.timetable.TimetableOrigin.INVENTED -> "Påhittade tider"
+    }
 }

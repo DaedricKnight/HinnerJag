@@ -13,11 +13,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 data class TripState(
     val route: FerryRoute,
     val departure: Int,
     val verdict: Verdict,
+    /** The departures the verdict uses; live trips refresh them every tick. */
+    val departures: List<Int>,
 )
 
 /**
@@ -38,11 +41,17 @@ class TripWatcher(private val graph: AppGraph) {
     /** Latest known drive time, so a re-pinned trip starts from where the car is, not from the start. */
     private var lastDriveSeconds = 0
 
-    fun start(route: FerryRoute, driveSeconds: Int, departure: Int) {
+    private var departures: List<Int> = emptyList()
+
+    /** The departure the driver aims for; moves with a delay reported in real time. */
+    private var pinned = 0
+
+    fun start(route: FerryRoute, driveSeconds: Int, departure: Int, departures: List<Int>) {
         stop()
         startedAt = SystemClock.elapsedRealtime()
         initialDriveSeconds = driveSeconds
         lastDriveSeconds = driveSeconds
+        this.departures = departures
         TripWatchService.start(graph.app)
         follow(route, departure)
     }
@@ -64,18 +73,19 @@ class TripWatcher(private val graph: AppGraph) {
     }
 
     private fun follow(route: FerryRoute, departure: Int) {
+        pinned = departure
         val margin = graph.settings.margin(route)
         val drive = if (graph.settings.demoMode) demoDrive(elapsedSeconds()).first else lastDriveSeconds
-        val first = Verdicts.evaluate(route.departures, graph.clock.nowSecondOfDay(), drive, margin, departure)
-        mutableState.value = TripState(route, departure, first)
+        val first = Verdicts.evaluate(departures, graph.clock.nowSecondOfDay(), drive, margin, departure)
+        mutableState.value = TripState(route, departure, first, departures)
         graph.alerts.updateOngoing(route, first)
 
         job = graph.scope.launch {
             var severity = Verdicts.severity(first.status)
             while (isActive) {
                 delay(if (graph.settings.demoMode) DEMO_TICK_MS else TICK_MS)
-                val step = check(route, departure) ?: continue
-                mutableState.value = TripState(route, departure, step.verdict)
+                val step = check(route) ?: continue
+                mutableState.value = TripState(route, pinned, step.verdict, departures)
                 graph.alerts.updateOngoing(route, step.verdict)
 
                 val now = Verdicts.severity(step.verdict.status)
@@ -84,7 +94,7 @@ class TripWatcher(private val graph: AppGraph) {
                 }
                 severity = now
 
-                val departed = graph.clock.nowSecondOfDay() / 60 > departure
+                val departed = graph.clock.nowSecondOfDay() / 60 > pinned
                 if (step.arrived || departed) {
                     stop()
                     break
@@ -95,23 +105,31 @@ class TripWatcher(private val graph: AppGraph) {
 
     private class Step(val verdict: Verdict, val queueSimulated: Boolean, val arrived: Boolean)
 
-    private suspend fun check(route: FerryRoute, departure: Int): Step? {
+    private suspend fun check(route: FerryRoute): Step? {
         val elapsed = elapsedSeconds()
         val margin = graph.settings.margin(route)
         val now = graph.clock.nowSecondOfDay()
+        // Live times move (delays, cancellations); keep the trip's list current. The pinned
+        // departure is a planned minute and may shift with a delay: follow the closest one.
+        val fresh = graph.timetables.today(route, now).minutes
+        if (fresh.isNotEmpty()) {
+            departures = fresh
+            pinned = fresh.minByOrNull { abs(it - pinned) }?.takeIf { abs(it - pinned) <= PIN_DRIFT_MINUTES } ?: pinned
+        }
+        val departure = pinned
 
         if (graph.settings.demoMode) {
             val (remaining, queued) = demoDrive(elapsed)
-            return Step(Verdicts.evaluate(route.departures, now, remaining, margin, departure), queued, remaining <= 0)
+            return Step(Verdicts.evaluate(departures, now, remaining, margin, departure), queued, remaining <= 0)
         }
 
         val here = graph.position.current() ?: return null
         if (distanceKm(here, route.port) < ARRIVED_KM) {
-            return Step(Verdicts.evaluate(route.departures, now, 0, margin, departure), false, true)
+            return Step(Verdicts.evaluate(departures, now, 0, margin, departure), false, true)
         }
         val drive = graph.eta.eta(here, route.port).seconds
         lastDriveSeconds = drive
-        return Step(Verdicts.evaluate(route.departures, now, drive, margin, departure), false, false)
+        return Step(Verdicts.evaluate(departures, now, drive, margin, departure), false, false)
     }
 
     private fun elapsedSeconds() = ((SystemClock.elapsedRealtime() - startedAt) / 1000).toInt()
@@ -130,5 +148,6 @@ class TripWatcher(private val graph: AppGraph) {
         const val DEMO_TICK_MS = 15_000L
         const val QUEUE_AFTER_SECONDS = 30
         const val ARRIVED_KM = 0.3
+        const val PIN_DRIFT_MINUTES = 15
     }
 }

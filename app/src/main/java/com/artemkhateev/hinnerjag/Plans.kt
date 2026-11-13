@@ -6,6 +6,8 @@ import com.artemkhateev.hinnerjag.model.FerryRoute
 import com.artemkhateev.hinnerjag.model.Timetable
 import com.artemkhateev.hinnerjag.model.Verdict
 import com.artemkhateev.hinnerjag.model.Verdicts
+import com.artemkhateev.hinnerjag.timetable.DepartureSource
+import com.artemkhateev.hinnerjag.timetable.TimetableOrigin
 
 data class RoutePlan(
     val route: FerryRoute,
@@ -14,6 +16,10 @@ data class RoutePlan(
     val driveMeters: Int,
     val etaSource: EtaSource,
     val nowSecond: Int,
+    /** The departures the verdict was computed from, minutes after midnight. */
+    val departures: List<Int>,
+    val timetable: TimetableOrigin,
+    val tomorrowFirst: Int?,
 )
 
 sealed interface PlansResult {
@@ -28,6 +34,7 @@ class Plans(
     private val clock: AppClock,
     private val position: CarPosition,
     private val eta: EtaProvider,
+    private val timetables: DepartureSource,
 ) {
     suspend fun all(): PlansResult {
         val from = position.current() ?: return PlansResult.NoPosition
@@ -43,7 +50,8 @@ class Plans(
     private suspend fun plan(route: FerryRoute, from: com.artemkhateev.hinnerjag.model.LatLon, pinned: Int?): RoutePlan {
         val drive = eta.eta(from, route.port)
         val now = clock.nowSecondOfDay()
-        val verdict = Verdicts.evaluate(route.departures, now, drive.seconds, settings.margin(route), pinned)
-        return RoutePlan(route, verdict, drive.seconds, drive.meters, drive.source, now)
+        val today = timetables.today(route, now)
+        val verdict = Verdicts.evaluate(today.minutes, now, drive.seconds, settings.margin(route), pinned)
+        return RoutePlan(route, verdict, drive.seconds, drive.meters, drive.source, now, today.minutes, today.origin, today.tomorrowFirst)
     }
 }

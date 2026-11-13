@@ -13,6 +13,9 @@ enum class Vessel(val indefinite: String, val definite: String) {
     BOAT("båt", "båten"),
 }
 
+/** Stop area names in Västtrafik for a route they run; the destination may have several piers. */
+data class VasttrafikStops(val origin: String, val destinations: List<String>)
+
 data class FerryRoute(
     val id: String,
     val from: String,
@@ -23,8 +26,10 @@ data class FerryRoute(
     val vessel: Vessel,
     val boarding: Boarding,
     val defaultMarginMinutes: Int,
-    /** Today's departures as minutes after midnight, ascending. */
+    /** Invented departures as minutes after midnight, ascending; the fallback for live routes. */
     val departures: List<Int>,
+    /** Set when Västtrafik runs the route and can give real times. */
+    val vasttrafik: VasttrafikStops? = null,
 )
 
 data class Timetable(val note: String, val routes: List<FerryRoute>) {
@@ -67,6 +72,10 @@ object TimetableParser {
             boarding = Boarding.valueOf(o.getString("boarding")),
             defaultMarginMinutes = o.getInt("marginMinutes"),
             departures = departures.sorted(),
+            vasttrafik = o.optJSONObject("vasttrafik")?.let { vt ->
+                val to = vt.getJSONArray("destinations")
+                VasttrafikStops(vt.getString("origin"), (0 until to.length()).map { to.getString(it) })
+            },
         )
     }
 

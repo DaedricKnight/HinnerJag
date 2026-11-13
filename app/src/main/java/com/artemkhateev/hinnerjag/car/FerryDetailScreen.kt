@@ -17,6 +17,7 @@ import com.artemkhateev.hinnerjag.graph
 import com.artemkhateev.hinnerjag.model.Copy
 import com.artemkhateev.hinnerjag.model.Status
 import com.artemkhateev.hinnerjag.model.Verdict
+import com.artemkhateev.hinnerjag.timetable.TimetableOrigin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -50,7 +51,7 @@ class FerryDetailScreen(carContext: CarContext, private val routeId: String) : S
         if (verdict == null) {
             pane.setLoading(true)
         } else {
-            rows(verdict).forEach(pane::addRow)
+            rows(verdict, tomorrowFirst = if (trip == null) plan?.tomorrowFirst else null).forEach(pane::addRow)
             actions(verdict, following = trip != null).forEach(pane::addAction)
             if (carContext.carAppApiLevel >= CarAppApiLevels.LEVEL_4) pane.setImage(image(verdict))
         }
@@ -60,30 +61,33 @@ class FerryDetailScreen(carContext: CarContext, private val routeId: String) : S
             .build()
     }
 
-    private fun rows(v: Verdict): List<Row> {
+    private fun rows(v: Verdict, tomorrowFirst: Int?): List<Row> {
         val headline = Row.Builder().setTitle(Copy.headline(v))
         return when (v.status) {
             Status.ON_TIME, Status.TIGHT -> {
                 headline.addText(colored(Copy.marginLine(v.slackMinutes!!), textColor(v)))
-                Copy.body(route, v)?.let { headline.addText(it) }
+                Copy.body(route, v, tomorrowFirst)?.let { headline.addText(it) }
                 listOf(
                     headline.build(),
                     step(v.arrival, Copy.arrivalStep(route, v)),
                     step(v.boardBy!!, Copy.boardingStep(route, v.marginMinutes)),
-                    Row.Builder().setTitle(Copy.clock(v.departure!!)).addText("Avgång").addText(route.description).build(),
+                    Row.Builder().setTitle(Copy.clock(v.departure!!)).addText("Avgång · ${sourceLabel()}").addText(route.description).build(),
                 )
             }
             Status.MISSED -> buildList {
-                add(headline.addText(Copy.body(route, v)!!).build())
+                add(headline.addText(Copy.body(route, v, tomorrowFirst)!!).build())
                 v.next?.let { add(Row.Builder().setTitle(Copy.nextTitle(route, it)).addText(Copy.nextDetails(v)).build()) }
-                add(Row.Builder().setTitle(route.description).build())
+                add(Row.Builder().setTitle(route.description).addText(sourceLabel()).build())
             }
             Status.NONE_LEFT -> listOf(
-                headline.apply { Copy.body(route, v)?.let(::addText) }.build(),
-                Row.Builder().setTitle(route.description).build(),
+                headline.apply { Copy.body(route, v, tomorrowFirst)?.let(::addText) }.build(),
+                Row.Builder().setTitle(route.description).addText(sourceLabel()).build(),
             )
         }
     }
+
+    /** Live or invented: the driver should know which. */
+    private fun sourceLabel() = Copy.timetableLabel(plan?.timetable ?: TimetableOrigin.INVENTED)
 
     private fun step(minute: Int, text: String) =
         Row.Builder().setTitle(Copy.clock(minute)).addText(text).build()
@@ -119,9 +123,9 @@ class FerryDetailScreen(carContext: CarContext, private val routeId: String) : S
     }
 
     private fun startTrip(departure: Int) {
-        val drive = plan?.driveSeconds ?: return
+        val current = plan ?: return
         carContext.withTripPermissions {
-            graph.trips.start(route, drive, departure)
+            graph.trips.start(route, current.driveSeconds, departure, current.departures)
             carContext.navigateTo(route.port)
         }
     }

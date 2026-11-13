@@ -76,9 +76,15 @@ Stäng av demoläget under **Marginaler** för att använda riktig klocka och bi
 
 ## Data och begränsningar
 
-- **Tidtabellerna är påhittade.** `app/src/main/assets/ferries.json` innehåller tre riktiga
-  linjer, men avgångstiderna kommer inte från rederierna. Hamnarnas koordinater kommer
-  från OpenStreetMap.
+- **Saltholmen → Styrsö kan hämta riktiga tider från Västtrafik.** Appen frågar Västtrafiks
+  API *Planera Resa v4* efter direkta båtar från Saltholmen till Styrsös tre bryggor:
+  Bratten, Tången och Skäret. Förseningar i realtid räknas med, och inställda turer tas bort. Under en
+  resa följer appen en försenad båt i stället för den ursprungliga tiden. Kortet visar
+  "Tider från Västtrafik" eller "Påhittade tider", och listan skriver "Västtrafik" eller
+  "påhittad".
+- **De andra två linjerna har påhittade tider.** Hönöleden körs av Trafikverket och
+  Göteborg–Frederikshavn av Stena Line, och ingen av dem finns i Västtrafiks API. Hamnarnas
+  koordinater kommer från OpenStreetMap.
 - **Restiden kommer från OSRM:s publika demoserver.** Den har ingen trafikinformation och
   en gräns på ungefär en förfrågan per sekund. Det räcker för en prototyp, men en riktig
   app behöver ett rutt-API med trafik i realtid. Om OSRM inte svarar uppskattar appen
@@ -97,6 +103,20 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am start -n com.artemkhateev.hinnerjag/androidx.car.app.activity.CarAppActivity
 ```
 
+### Västtrafik-nyckel
+
+Skapa en applikation på [developer.vasttrafik.se](https://developer.vasttrafik.se), prenumerera
+på *Planera Resa v4* och lägg nyckeln i `local.properties` (filen följer inte med i git):
+
+```properties
+vasttrafik.clientId=...
+vasttrafik.clientSecret=...
+```
+
+Utan nyckel, eller om Västtrafik inte svarar, använder appen de påhittade tiderna och visar
+det. Nyckeln byggs in i appen, vilket duger för en prototyp men inte för en app i butiken.
+Där bör en egen server hämta tiderna.
+
 Testad i emulatorn *Automotive (1408p landscape) with Google Play*, API 35, där systemets
 mallvärd (templates host) och Google Maps redan finns. Inställningen
 `heads_up_notifications_enabled` spelar ingen roll där: varningen dyker upp oavsett om
@@ -105,15 +125,16 @@ den är 0 eller 1.
 ## Kodstruktur
 
 ```
-model/   Ferry.kt (tidtabell), Verdicts.kt (regeln), Copy.kt (alla svenska meningar)
-eta/     OSRM, uppskattning fågelvägen, cache i 60 s
+model/      Ferry.kt (tidtabell), Verdicts.kt (regeln), Copy.kt (alla svenska meningar)
+timetable/  Västtrafik Planera Resa v4, reserv med påhittade tider, cache i 2 min
+eta/        OSRM, uppskattning fågelvägen, cache i 60 s
 car/     CarAppService och Session, listan, färjans kort, Marginaler
 trip/    bevakning av resan, aviseringar, förgrundstjänst (typ location)
 ```
 
 ## Inte gjort än
 
-- Riktiga tidtabeller (Västtrafik, Stena Line) och trafik i realtid.
+- Riktiga tider för Hönöleden (Trafikverkets API) och Stena Line, och trafik i realtid.
 - Android Auto. Det kräver en modul med `app-projected`, men skärmarna kan delas.
 - Karta på färjans kort (`MapWithContentTemplate`, Car App API-nivå 7).
 - Kaféknappen förutsätter att navigationsappen förstår en sökning (`geo:0,0?q=`).

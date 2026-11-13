@@ -7,6 +7,10 @@ import com.artemkhateev.hinnerjag.eta.FallbackEtaProvider
 import com.artemkhateev.hinnerjag.eta.OsrmEtaProvider
 import com.artemkhateev.hinnerjag.eta.StraightLineEtaProvider
 import com.artemkhateev.hinnerjag.model.TimetableParser
+import com.artemkhateev.hinnerjag.timetable.DepartureSource
+import com.artemkhateev.hinnerjag.timetable.InventedDepartures
+import com.artemkhateev.hinnerjag.timetable.VasttrafikClient
+import com.artemkhateev.hinnerjag.timetable.VasttrafikDepartures
 import com.artemkhateev.hinnerjag.trip.TripAlerts
 import com.artemkhateev.hinnerjag.trip.TripWatcher
 import kotlinx.coroutines.CoroutineScope
@@ -31,7 +35,18 @@ class AppGraph(val app: Application) {
     val clock = AppClock(settings)
     val position = CarPosition(app, settings)
     val eta = CachingEtaProvider(FallbackEtaProvider(OsrmEtaProvider(), StraightLineEtaProvider()))
-    val plans = Plans(timetable, settings, clock, position, eta)
+    /** Live Västtrafik times when local.properties has a key; invented times otherwise. */
+    val timetables: DepartureSource =
+        if (BuildConfig.VASTTRAFIK_CLIENT_ID.isNotEmpty() && BuildConfig.VASTTRAFIK_CLIENT_SECRET.isNotEmpty()) {
+            VasttrafikDepartures(
+                VasttrafikClient(BuildConfig.VASTTRAFIK_CLIENT_ID, BuildConfig.VASTTRAFIK_CLIENT_SECRET),
+                InventedDepartures,
+                app.getSharedPreferences("vasttrafik", android.content.Context.MODE_PRIVATE),
+            )
+        } else {
+            InventedDepartures
+        }
+    val plans = Plans(timetable, settings, clock, position, eta, timetables)
     val alerts = TripAlerts(app)
     val trips = TripWatcher(this)
 }

@@ -1,9 +1,16 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
 }
+
+/** Secrets stay in local.properties, which git ignores. */
+val localProps = Properties().apply {
+    rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use(::load)
+}
+fun localProp(key: String) = (localProps.getProperty(key) ?: System.getenv(key.uppercase().replace('.', '_')) ?: "").trim()
 
 android {
     namespace = "com.artemkhateev.hinnerjag"
@@ -16,6 +23,18 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1"
+
+        // Västtrafik "Planera Resa v4" app credentials (developer.vasttrafik.se). Empty → invented times.
+        buildConfigField("String", "VASTTRAFIK_CLIENT_ID", "\"${localProp("vasttrafik.clientId")}\"")
+        buildConfigField("String", "VASTTRAFIK_CLIENT_SECRET", "\"${localProp("vasttrafik.clientSecret")}\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
     }
 
     buildTypes {

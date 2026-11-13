@@ -1,5 +1,5 @@
 {
-  "note": "Påhittade tider för prototypen – inte rederiernas riktiga tidtabeller. Koordinaterna är ungefärliga (OpenStreetMap).",
+  "note": "Påhittade tider för prototypen – inte rederiernas riktiga tidtabeller. Saltholmen–Styrsö hämtas från Västtrafik när en nyckel finns; de påhittade tiderna är då bara reserv. Koordinaterna är ungefärliga (OpenStreetMap).",
   "routes": [
     {
       "id": "frederikshavn",
@@ -38,7 +38,8 @@
       "vessel": "BOAT",
       "boarding": "WALK",
       "marginMinutes": 10,
-      "every": { "first": "06:00", "last": "23:30", "minutes": 30 }
+      "every": { "first": "06:00", "last": "23:30", "minutes": 30 },
+      "vasttrafik": { "origin": "Saltholmen", "destinations": ["Styrsö Bratten", "Styrsö Tången", "Styrsö Skäret"] }
     }
   ]
 }

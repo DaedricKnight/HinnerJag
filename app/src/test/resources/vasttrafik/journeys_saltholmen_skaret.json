@@ -1,0 +1,55 @@
+{
+  "results": [
+    {
+      "tripLegs": [
+        {
+          "isCancelled": false,
+          "plannedDepartureTime": "2026-11-13T14:23:00.0000000+01:00",
+          "estimatedOtherwisePlannedDepartureTime": "2026-11-13T14:23:00.0000000+01:00",
+          "serviceJourney": {
+            "direction": "Vrångö",
+            "line": {
+              "name": "Färja 281",
+              "shortName": "281",
+              "transportMode": "ferry"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "tripLegs": [
+        {
+          "isCancelled": false,
+          "plannedDepartureTime": "2026-11-13T15:28:00.0000000+01:00",
+          "estimatedOtherwisePlannedDepartureTime": "2026-11-13T15:28:00.0000000+01:00",
+          "serviceJourney": {
+            "direction": "Vrångö",
+            "line": {
+              "name": "Färja 281",
+              "shortName": "281",
+              "transportMode": "ferry"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "tripLegs": [
+        {
+          "isCancelled": false,
+          "plannedDepartureTime": "2026-11-13T16:30:00.0000000+01:00",
+          "estimatedOtherwisePlannedDepartureTime": "2026-11-13T16:30:00.0000000+01:00",
+          "serviceJourney": {
+            "direction": "Vrångö",
+            "line": {
+              "name": "Färja 281",
+              "shortName": "281",
+              "transportMode": "ferry"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

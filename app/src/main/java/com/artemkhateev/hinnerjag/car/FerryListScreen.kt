@@ -23,6 +23,7 @@ import com.artemkhateev.hinnerjag.RoutePlan
 import com.artemkhateev.hinnerjag.eta.EtaSource
 import com.artemkhateev.hinnerjag.graph
 import com.artemkhateev.hinnerjag.model.Copy
+import com.artemkhateev.hinnerjag.timetable.TimetableOrigin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -92,6 +93,7 @@ class FerryListScreen(carContext: CarContext) : Screen(carContext) {
                     if (plan.route.id == following) append("Följer resan · ")
                     append(Copy.listDetails(v))
                     if (plan.etaSource == EtaSource.ESTIMATE) append(" (uppskattad)")
+                    append(if (plan.timetable == TimetableOrigin.VASTTRAFIK) " · Västtrafik" else " · påhittad")
                 },
             )
             val place = Place.Builder(CarLocation.create(plan.route.port.lat, plan.route.port.lon))
